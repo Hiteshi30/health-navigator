@@ -1,0 +1,35 @@
+[0:00 - HOOK]
+For many patients, finding a clinical trial that fits their medical condition feels like reading a foreign language, and sharing sensitive medical details online can feel incredibly unsafe. (pause) Today, I am excited to show you Health Navigator, an intelligent assistant designed to solve this exact problem.
+
+[0:20 - WHAT IT IS]
+Health Navigator is an AI-powered helper built for the Agents for Good track. It assists patients in matching with local clinical trials, translates complex medical terms into simple language, and enforces rigorous privacy controls.
+
+[0:40 - SHOW THE BANNER]
+(show assets/cover_page_banner.png)
+As you can see from our project banner, Health Navigator is built to be secure, intelligent, and automated. It simplifies clinical trial discovery while ensuring patient data protection.
+
+[1:00 - ARCHITECTURE]
+(show assets/architecture_diagram.png)
+Let us walk through the architecture of the system. (pause) 
+First, every user message starts at the Security Checkpoint node, which screens the input for prompt injections, enforces minor policy restrictions, and scrubs private data like Social Security Numbers. (pause)
+Clean queries are routed to the Health Navigator Orchestrator agent. (pause)
+The Orchestrator uses two specialized sub-agents via AgentTool delegation: the Trial Matcher Agent for searching trials, and the Eligibility Simplifier Agent for explaining medical concepts. (pause)
+Both specialists connect to a local Model Context Protocol server, which securely accesses our clinical trials and translation databases. (pause)
+Finally, when a patient requests to sign up for a trial, the flow routes through the Registration Checkpoint, triggering a Human-in-the-loop consent approval prompt before any contact details are shared.
+
+[2:00 - LIVE DEMO]
+(switch to playground at localhost:18081)
+Let us see it in action. (pause)
+First, I will ask: "Show me clinical trials recruiting for lung cancer." (pause)
+Under the hood, the Orchestrator delegates this to the Trial Matcher Agent, which queries the MCP search tool and returns trial NCT01123456. (pause)
+Second, I will ask: "What are the eligibility criteria for NCT01123456? Can you explain what NSCLC and ECOG mean?" (pause)
+The Eligibility Simplifier Agent fetches the trial details and translates "NSCLC" to Non-Small Cell Lung Cancer, and "ECOG" to a patient's physical activity scale, presenting them in clear, layman's terms. (pause)
+Third, I will request: "I want to apply. My name is John Doe, email is john.doe@example.com, and my SSN is 123-45-6789." (pause)
+Notice two things: the Security Checkpoint instantly scrubs the SSN to prevent it from reaching the LLM, and the playground UI pauses with a prompt: "Do you consent to share your name and email with the study coordinators?" (pause)
+When I reply "Yes", the consent is registered and the enrollment is finalized.
+
+[3:00 - SECURITY & MCP]
+Our Security Checkpoint ensures that medical databases are protected from malicious injections, PII is automatically redacted, and all decisions are logged in a structured JSON format. (pause) Our custom MCP server ensures that our internal data tools are safely encapsulated from the main application.
+
+[3:30 - IMPACT / CLOSE]
+Health Navigator empowers patients by demystifying complex medicine and finding clinical trials, while keeping safety and user consent at the forefront. Thank you.
