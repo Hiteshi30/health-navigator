@@ -1,35 +1,33 @@
-[0:00 - HOOK]
-For many patients, finding a clinical trial that fits their medical condition feels like reading a foreign language, and sharing sensitive medical details online can feel incredibly unsafe. (pause) Today, I am excited to show you Health Navigator, an intelligent assistant designed to solve this exact problem.
+[0:00 - HOOK & PROBLEM STATEMENT]
+For many patients, finding a clinical trial that fits their medical condition feels like reading a foreign language. Navigating thousands of listings is overwhelming, medical jargon is incomprehensible, and sharing sensitive personal details online can feel incredibly unsafe. (pause)
+Today, I am excited to show you Health Navigator, an intelligent assistant designed to solve this exact problem by making trial discovery secure, simple, and patient-centric.
 
-[0:20 - WHAT IT IS]
-Health Navigator is an AI-powered helper built for the Agents for Good track. It assists patients in matching with local clinical trials, translates complex medical terms into simple language, and enforces rigorous privacy controls.
+[0:40 - WHY AGENTS?]
+So, why agents? A standard chatbot or single-prompt system cannot safely navigate this complexity. It is too easy for a single model to get confused between searching databases, translating terms, and securing data.
+Instead, we built an agentic system with specialized sub-agents. We have a Trial Matcher Specialist that searches databases, and an Eligibility Simplifier Specialist that focuses only on decoding terminology. This delegation allows each agent to use narrow, highly optimized tools, ensuring accuracy, security, and predictability.
 
-[0:40 - SHOW THE BANNER]
-(show assets/cover_page_banner.png)
-As you can see from our project banner, Health Navigator is built to be secure, intelligent, and automated. It simplifies clinical trial discovery while ensuring patient data protection.
-
-[1:00 - ARCHITECTURE]
-(show assets/architecture_diagram.png)
-Let us walk through the architecture of the system. (pause) 
-First, every user message starts at the Security Checkpoint node, which screens the input for prompt injections, enforces minor policy restrictions, and scrubs private data like Social Security Numbers. (pause)
-Clean queries are routed to the Health Navigator Orchestrator agent. (pause)
-The Orchestrator uses two specialized sub-agents via AgentTool delegation: the Trial Matcher Agent for searching trials, and the Eligibility Simplifier Agent for explaining medical concepts. (pause)
-Both specialists connect to a local Model Context Protocol server, which securely accesses our clinical trials and translation databases. (pause)
-Finally, when a patient requests to sign up for a trial, the flow routes through the Registration Checkpoint, triggering a Human-in-the-loop consent approval prompt before any contact details are shared.
+[1:20 - THE BUILD & SOLUTIONS ARCHITECTURE]
+(show assets/cover_page_banner.png or assets/architecture_diagram.png)
+Let's talk about the build. Health Navigator is built using the Google Agent Development Kit (ADK) 2.0. We implemented a graph-based workflow in Python that manages the session state and controls the execution path.
+To connect our agents to our internal clinical trial and medical translation databases, we built a custom Model Context Protocol (MCP) server that runs locally over stdio. This ensures that the agents interact with our data sources through a secure, well-defined tool interface rather than direct database access.
 
 [2:00 - LIVE DEMO]
 (switch to playground at localhost:18081)
 Let us see it in action. (pause)
 First, I will ask: "Show me clinical trials recruiting for lung cancer." (pause)
-Under the hood, the Orchestrator delegates this to the Trial Matcher Agent, which queries the MCP search tool and returns trial NCT01123456. (pause)
+Under the hood, the Security Checkpoint authorizes the input. The Orchestrator delegates this query to the Trial Matcher Specialist, which invokes the MCP search tool and returns the recruiting trial NCT01123456. (pause)
 Second, I will ask: "What are the eligibility criteria for NCT01123456? Can you explain what NSCLC and ECOG mean?" (pause)
-The Eligibility Simplifier Agent fetches the trial details and translates "NSCLC" to Non-Small Cell Lung Cancer, and "ECOG" to a patient's physical activity scale, presenting them in clear, layman's terms. (pause)
+The Orchestrator recognizes that this is an eligibility question and delegates it to the Eligibility Simplifier Specialist. The specialist queries the MCP database to fetch the trial details and translates "NSCLC" to Non-Small Cell Lung Cancer, and "ECOG" to the physical activity scale, presenting them in clear, layman's terms. (pause)
 Third, I will request: "I want to apply. My name is John Doe, email is john.doe@example.com, and my SSN is 123-45-6789." (pause)
-Notice two things: the Security Checkpoint instantly scrubs the SSN to prevent it from reaching the LLM, and the playground UI pauses with a prompt: "Do you consent to share your name and email with the study coordinators?" (pause)
-When I reply "Yes", the consent is registered and the enrollment is finalized.
+Notice what happens: first, the Security Checkpoint immediately scrubs the SSN to prevent private PII from reaching the LLM. 
+Then, the Orchestrator executes the registration tool, updating the workflow state. 
+Finally, the workflow routes to the Registration Checkpoint node, which triggers a Human-in-the-loop consent pause. The playground UI interrupts the chat, asking: "Do you consent to share your name and email with the study coordinators?"
+When I reply "Yes", the consent is registered and the registration details are securely forwarded.
 
-[3:00 - SECURITY & MCP]
-Our Security Checkpoint ensures that medical databases are protected from malicious injections, PII is automatically redacted, and all decisions are logged in a structured JSON format. (pause) Our custom MCP server ensures that our internal data tools are safely encapsulated from the main application.
+[4:00 - SECURITY & MCP ENCAPSULATION]
+Security is at the core of Health Navigator. Every user input goes through a dedicated Security Checkpoint node. This checkpoint screens for prompt injections, enforces a minor-protection policy (preventing under-18 registrations), and redacts PII. It also logs every decision in a structured JSON audit log.
+Additionally, the Model Context Protocol encapsulates all data access, shielding the database from prompt injections.
 
-[3:30 - IMPACT / CLOSE]
-Health Navigator empowers patients by demystifying complex medicine and finding clinical trials, while keeping safety and user consent at the forefront. Thank you.
+[4:30 - IMPACT & CONCLUSION]
+Health Navigator empowers patients by demystifying complex medicine and automating clinical trial discovery, while keeping data security and human-in-the-loop consent at the forefront.
+Thank you.
