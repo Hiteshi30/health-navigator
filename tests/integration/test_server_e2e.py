@@ -69,6 +69,7 @@ def start_server() -> subprocess.Popen[str]:
     ]
     env = os.environ.copy()
     env["INTEGRATION_TEST"] = "TRUE"
+    env.setdefault("GOOGLE_CLOUD_PROJECT", "dummy-project")
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,

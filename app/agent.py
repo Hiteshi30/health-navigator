@@ -28,11 +28,19 @@ mcp_toolset = McpToolset(
     )
 )
 
+# ─── RETRY CONFIGURATION ───
+retry_config = types.HttpRetryOptions(
+    attempts=5,
+    initial_delay=2.0,
+    max_delay=10.0,
+    http_status_codes=[503, 429]
+)
+
 # ─── SPECIALIZED SUB-AGENTS ───
 
 trial_matcher_agent = LlmAgent(
     name="trial_matcher_agent",
-    model=Gemini(model=config.model),
+    model=Gemini(model=config.model, retry_options=retry_config),
     instruction="""You are a Clinical Trial Matching Specialist. 
 Your goal is to search for clinical trials and extract detailed trial criteria for specific studies.
 Always use search_clinical_trials to find trials, and get_trial_details to look up a trial's specifics.
@@ -43,7 +51,7 @@ Provide accurate trial listings and highlight key facts like title, location, st
 
 eligibility_simplifier_agent = LlmAgent(
     name="eligibility_simplifier_agent",
-    model=Gemini(model=config.model),
+    model=Gemini(model=config.model, retry_options=retry_config),
     instruction="""You are a Medical Eligibility Simplifier.
 Your job is to translate complex medical terms and abbreviations into simple, patient-friendly explanations.
 Analyze inclusion and exclusion criteria and explain them in clear, layman's terms.
@@ -96,13 +104,20 @@ def request_trial_registration(
 
 health_navigator_orchestrator = LlmAgent(
     name="health_navigator_orchestrator",
-    model=Gemini(model=config.model),
+    model=Gemini(model=config.model, retry_options=retry_config),
     instruction="""You are the Health Navigator Orchestrator. 
 Your goal is to guide patients in finding clinical trials and understanding eligibility requirements.
 You coordinate between the Trial Matcher Specialist and the Eligibility Simplifier Specialist.
+
+CRITICAL INSTRUCTIONS FOR REGISTRATION:
+- If the user explicitly requests to apply, sign up, or register for a trial (e.g. saying "I want to apply", "register me", etc.), you MUST call the request_trial_registration tool.
+- Use the most recently discussed or mentioned clinical trial ID (such as 'NCT01123456') from the conversation history as the trial_id argument. Do NOT search for trials or consult Trial Matcher Specialist when the user is trying to register.
+- Extract the user's name (e.g., 'John Doe') and email (e.g., 'john.doe@example.com') from the message and pass them as patient_name and email arguments.
+- If an SSN is present (even if redacted as [REDACTED SSN]), do NOT mention or ask for the SSN. Just call the registration tool with the name and email.
+
+OTHER ROLES:
 - Use Trial Matcher Specialist to find trials matching the user's condition.
 - Use Eligibility Simplifier Specialist to translate complex terms or check eligibility criteria.
-- Use the request_trial_registration tool if the user explicitly requests to sign up or register for a trial.
 Be professional, empathetic, clear, and explain which specialist you are consulting.""",
     description="Main coordinator agent for Health Navigator.",
     tools=[
@@ -180,8 +195,6 @@ def security_breach_handler(node_input: str):
 async def registration_checkpoint(ctx: Context, node_input: Any):
     pending = ctx.state.get("pending_registration")
     if not pending:
-        # Just yield the orchestrator's output
-        yield Event(output=node_input)
         return
 
     # Awaiting consent via interrupt
@@ -239,3 +252,6 @@ app = App(
     name="app",
     resumability_config=ResumabilityConfig(is_resumable=True)
 )
+
+root_agent = health_navigator_workflow
+

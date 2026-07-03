@@ -16,6 +16,12 @@ import contextlib
 import os
 from collections.abc import AsyncIterator
 
+if os.getenv("INTEGRATION_TEST") == "TRUE":
+    import google.auth
+    from google.auth.credentials import AnonymousCredentials
+    google.auth.default = lambda *args, **kwargs: (AnonymousCredentials(), "dummy-project")
+
+
 import google.auth
 from a2a.server.tasks import InMemoryTaskStore
 from dotenv import load_dotenv
@@ -38,10 +44,22 @@ from app.app_utils.typing import Feedback
 load_dotenv()
 setup_telemetry()
 # Must run before get_fast_api_app to set the tracer provider resource.
-setup_agent_engine_telemetry()
-_, project_id = google.auth.default()
-logging_client = google_cloud_logging.Client()
-logger = logging_client.logger(__name__)
+if os.getenv("INTEGRATION_TEST") == "TRUE":
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.log_struct = lambda data, severity="INFO": logger.info(f"Struct log ({severity}): {data}")
+else:
+    try:
+        setup_agent_engine_telemetry()
+        _, project_id = google.auth.default()
+        logging_client = google_cloud_logging.Client()
+        logger = logging_client.logger(__name__)
+    except Exception as e:
+        import logging
+        logging.warning(f"Failed to initialize GCP logging/telemetry (running in fallback local mode): {e}")
+        logger = logging.getLogger(__name__)
+        logger.log_struct = lambda data, severity="INFO": logger.info(f"Struct log ({severity}): {data}")
+
 allow_origins = (
     os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
 )
